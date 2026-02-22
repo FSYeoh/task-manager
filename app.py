@@ -24,6 +24,14 @@ if "tasks" not in st.session_state:
 
 tasks = st.session_state.tasks
 
+st.subheader("Tasks")
+
+filter_choice = st.radio(
+    "Show",
+    ["All", "Active", "Completed"],
+    horizontal=True,
+)
+
 # Add task
 new_task = st.text_input("Add a new task")
 
@@ -36,17 +44,28 @@ if st.button("Add Task"):
 st.divider()
 
 # Show tasks
-for i, task in enumerate(tasks):
-    col1, col2, col3 = st.columns([0.1, 0.7, 0.2])
+# Build a filtered view but keep original indexes
+indexed_tasks = list(enumerate(tasks))
 
-    done = col1.checkbox("", value=task["done"], key=f"done_{i}")
-    if done != task["done"]:
-        task["done"] = done
-        save_tasks(tasks)
+if filter_choice == "Active":
+    indexed_tasks = [(i, t) for i, t in indexed_tasks if not t.get("done")]
+elif filter_choice == "Completed":
+    indexed_tasks = [(i, t) for i, t in indexed_tasks if t.get("done")]
 
-    col2.write(("✅ " if task["done"] else "❌ ") + task["task"])
+if not indexed_tasks:
+    st.info("No tasks in this view.")
+else:
+    for i, task in indexed_tasks:
+        col1, col2, col3 = st.columns([0.1, 0.7, 0.2])
 
-    if col3.button("Delete", key=f"delete_{i}"):
-        tasks.pop(i)
-        save_tasks(tasks)
-        st.rerun()
+        done = col1.checkbox("", value=task["done"], key=f"done_{i}")
+        if done != task["done"]:
+            task["done"] = done
+            save_tasks(tasks)
+
+        col2.write(("✅ " if task["done"] else "❌ ") + task["task"])
+
+        if col3.button("Delete", key=f"delete_{i}"):
+            tasks.pop(i)
+            save_tasks(tasks)
+            st.rerun()
